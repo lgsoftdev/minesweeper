@@ -10,9 +10,9 @@ import java.util.stream.Collectors;
 
 public class Tile {
     final int aMine = -1;
-    final int beginnerGridHeight = 10;
-    final int beginnerGridWidth = 10;
-    final int beginnerTotalMines = 10;
+    final int beginnerGridHeight = 5;
+    final int beginnerGridWidth = 5;
+    final int beginnerTotalMines = 2;
     
     private int gridHeight;
     private int gridWidth;
@@ -23,11 +23,14 @@ public class Tile {
     private ArrayList<ArrayList<Integer>> squaresArr = new ArrayList<ArrayList<Integer>>();
     private ArrayList<Integer[]> xyArr = new ArrayList<Integer[]>();
 
+    private boolean gameCompleted;
+
     public Tile(){
         //Default is 10x10 tile.
         setGridHeight(beginnerGridHeight);
         setGridWidth(beginnerGridWidth);
         setTotalMines(beginnerTotalMines);
+        setGameCompleted(false);
         
         setGameTitle();
 
@@ -37,6 +40,14 @@ public class Tile {
         plantMines();
         // 3. Assign mine count on squares adjacent to the mines.
         countAdjacentMines();
+    }
+
+    public boolean isGameCompleted() {
+        return gameCompleted;
+    }
+
+    public void setGameCompleted(boolean gameCompleted) {
+        this.gameCompleted = gameCompleted;
     }
 
     private int getGridHeight() {
@@ -143,12 +154,16 @@ public class Tile {
     }
 
     //A COPY. DO NOT DELETE.
-    public void revealTiles(){
+    public void revealSquareTiles(Integer[] explosionCoordinates){
         for(int i = 0; i < squaresArr.size(); i++)  {
             printRowTopBorder();
             System.out.println("");
             for(int j = 0; j < squaresArr.get(i).size(); j++)  {
-                System.out.print(String.format("|%1$5s", squaresArr.get(i).get(j)));
+                String content = squaresArr.get(i).get(j) > 0 ? Integer.toString(squaresArr.get(i).get(j)) :  squaresArr.get(i).get(j) == -1 ? "[@]" : " ";
+                if(explosionCoordinates.length > 0){
+                    if(explosionCoordinates[0].equals(i) && explosionCoordinates[1].equals(j)) content = "BOOM";
+                }
+                System.out.print(String.format("|%1$5s", content));
                 if(j == squaresArr.get(i).size() - 1){
                     System.out.print("|");
                 }
@@ -160,11 +175,14 @@ public class Tile {
 
     // IN PROGRESS
     private void displayTiles(){
+        boolean completed = true;
         for(int i = 0; i < squaresArr.size(); i++)  {
             printRowTopBorder();
             System.out.println("");
             for(int j = 0; j < squaresArr.get(i).size(); j++)  {
-                System.out.print(String.format("|%1$5s", revealTile(i, j) ? (squaresArr.get(i).get(j) == 0) ? " ": squaresArr.get(i).get(j) : "*"));
+                String content = getTileContent(i, j);
+                if (content.equals("*") && !hasAMine(i, j)) completed = false;
+                System.out.print(String.format("|%1$5s", content));
                 if(j == squaresArr.get(i).size() - 1){
                     System.out.print("|");
                 }
@@ -172,6 +190,13 @@ public class Tile {
             System.out.println("");
         }
         printRowTopBorder();
+
+        setGameCompleted(completed);
+    }
+
+    private String getTileContent(int x, int y){
+        String value = revealTile(x, y) ? (squaresArr.get(x).get(y) == 0) ? " " : Integer.toString(squaresArr.get(x).get(y)) : "*";
+        return value;
     }
 
     private boolean revealTile(int rowIndex, int columnIndex){
@@ -411,37 +436,42 @@ public class Tile {
     public void playGame(){
         boolean quit = false;
         boolean exploded = false;
-        boolean completed = false;
         System.out.println(getGameTitle());
         
         Scanner sc = new Scanner(System.in);
-        while (!quit && !exploded && !completed){
-            revealTiles();
+        while (!quit && !exploded && !isGameCompleted()){
+            revealSquareTiles(new Integer[0]);
             displayTiles();
-            System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-9) and column number (0-9) separated by a comma (eg. 0,2).");
-            System.out.println("\nPlease enter 'q' if you wish to quit the game.");
-            String xy = sc.nextLine();
-            if (xy.equals("q")) {
-                quit = true;
-            }else{
-                if(validateXY(xy)) {
-                    Integer[] coordinate = convertStringToIntegerArray(xy);
-                    if(hasAMine(coordinate[0], coordinate[1])){
-                        exploded = true;
-                    } else {
-                        if(isSquareTileEmpty(coordinate[0], coordinate[1])){
-                            addEmptySquarestoXYArray(coordinate[0], coordinate[1]);
-                        } else{
-                            xyArr.add(coordinate);
-                        }
-                    }
+            if(!isGameCompleted()) {
+                System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-9) and column number (0-9) separated by a comma (eg. 0,2).");
+                System.out.println("\nPlease enter 'q' if you wish to quit the game.");
+                String xy = sc.nextLine();
+                if (xy.equals("q")) {
+                    quit = true;
                 }else{
-                    System.out.println("The coordinates you entered were invalid.");
+                    if(validateXY(xy)) {
+                        Integer[] coordinate = convertStringToIntegerArray(xy);
+                        if(hasAMine(coordinate[0], coordinate[1])){
+                            exploded = true;
+                            revealSquareTiles(coordinate);
+                            System.out.println("\nBOOM! You LOSE!");
+                        } else {
+                            if(isSquareTileEmpty(coordinate[0], coordinate[1])){
+                                addEmptySquarestoXYArray(coordinate[0], coordinate[1]);
+                            } else{
+                                xyArr.add(coordinate);
+                            }
+                        }
+                    }else{
+                        System.out.println("The coordinates you entered were invalid.");
+                    }
                 }
+            } else{
+                revealSquareTiles(new Integer[0]);
+                System.out.println("\nCongratulations! You WIN!");
             }
         }
         sc.close();
-        if(quit) System.out.println("See you next time!");
-        if(exploded) System.out.println("BOOM!");
+        if(quit) System.out.println("\nSee you next time!");
     }
 }
