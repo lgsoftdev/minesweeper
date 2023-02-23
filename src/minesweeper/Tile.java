@@ -80,7 +80,7 @@ public class Tile {
     private void plantMines(){
         Random rand = new Random();
         for(int i = 0; i < getTotalMines(); i++){
-            Boolean placed = false;
+            boolean placed = false;
             while(!placed){
                 int heightIndex = rand.nextInt(getGridHeight());
                 int widthIndex = rand.nextInt(getGridWidth());
@@ -164,7 +164,7 @@ public class Tile {
             printRowTopBorder();
             System.out.println("");
             for(int j = 0; j < squaresArr.get(i).size(); j++)  {
-                System.out.print(String.format("|%1$5s", revealTile(i, j) ? squaresArr.get(i).get(j) : "?"));
+                System.out.print(String.format("|%1$5s", revealTile(i, j) ? (squaresArr.get(i).get(j) == 0) ? " ": squaresArr.get(i).get(j) : "?"));
                 if(j == squaresArr.get(i).size() - 1){
                     System.out.print("|");
                 }
@@ -190,8 +190,8 @@ public class Tile {
     }
 
     private boolean isOutOfBounds(int heightIndex, int widthIndex){
-        if(heightIndex >= 0 && heightIndex < squaresArr.size()){
-            if(widthIndex >= 0 && widthIndex < squaresArr.get(heightIndex).size()){
+        if(heightIndex >= 0 && heightIndex < getGridHeight()){
+            if(widthIndex >= 0 && widthIndex < getGridWidth()){
                 return false;
             }
         }
@@ -215,6 +215,166 @@ public class Tile {
         return intArr;
     }
 
+    private void addEmptySquarestoXYArray(int initialX, int initialY) {
+        int x = initialX;
+        int y; // very first square to check is the square on the right of the initial xy
+        int initialHighestY;
+        int initialLowestY;
+        int currentHighestY;
+        int currentLowestY;
+        int focalY = initialY;
+        boolean stop;
+
+            //move right
+            y = focalY;
+            stop = false;
+            while(!stop){
+                y++;
+                if(y < getGridWidth()){
+                    if(squaresArr.get(x).get(y) != aMine) {
+                        xyArr.add(convertStringToIntegerArray(String.format("%s,%s", x, y)));
+                        if(squaresArr.get(x).get(y) > 0) {
+                            stop = true;
+                        }
+                    } 
+                } else {
+                    stop = true;
+                }
+            }
+            initialHighestY = y - 1;
+            currentHighestY = initialHighestY;
+
+            //move left
+            y = focalY;
+            stop = false;
+            while(!stop){
+                y--;
+                if (y >= 0) {
+                    if(squaresArr.get(x).get(y) != aMine) {
+                        xyArr.add(convertStringToIntegerArray(String.format("%s,%s", x, y)));
+                        if(squaresArr.get(x).get(y) > 0) {
+                            stop = true;
+                        }
+                    } 
+                } else {
+                    stop = true;
+                }
+            }
+            initialLowestY = y + 1;
+            currentLowestY = initialLowestY;
+
+
+        //Check from row after initialX until last row.
+        x = initialX + 1;
+        focalY = -1;
+        while(x < getGridHeight()){
+            for(int i = currentLowestY; i <= currentHighestY; i++){
+                xyArr.add(convertStringToIntegerArray(String.format("%s,%s", x, i)));
+                if(focalY == -1 && isSquareTileEmpty(x, i)){                  
+                    focalY = i;
+                }
+            }
+
+            if(focalY > -1){
+                //move right
+                y = focalY;
+                stop = false;
+                while(!stop){
+                    y++;
+                    if(y < getGridWidth()){
+                        if(squaresArr.get(x).get(y) != aMine) {
+                            xyArr.add(convertStringToIntegerArray(String.format("%s,%s", x, y)));
+                            if(squaresArr.get(x).get(y) > 0) {
+                                stop = true;
+                            }
+                        } 
+                    } else {
+                        stop = true;
+                    }
+                }
+                currentHighestY = y - 1;
+
+                //move left
+                y = focalY;
+                stop = false;
+                while(!stop){
+                    y--;
+                    if (y >= 0) {
+                        if(squaresArr.get(x).get(y) != aMine) {
+                            xyArr.add(convertStringToIntegerArray(String.format("%s,%s", x, y)));
+                            if(squaresArr.get(x).get(y) > 0) {
+                                stop = true;
+                            }
+                        } 
+                    } else {
+                        stop = true;
+                    }
+                }
+                currentLowestY =  y + 1;
+
+                x++;
+            }else{
+                x = getGridHeight();
+            }
+        }
+
+        //Check from row before initialX until first row.
+        x = initialX - 1;
+        currentLowestY = initialLowestY;
+        currentHighestY = initialHighestY;
+        focalY = -1;
+        while(x >= 0){
+            for(int i = currentLowestY; i <= currentHighestY; i++){
+                xyArr.add(convertStringToIntegerArray(String.format("%s,%s", x, i)));
+                if(focalY == -1 && isSquareTileEmpty(x, i)){
+                    focalY = i;
+                }
+            }
+
+            if (focalY > -1){
+                //move right
+                y = focalY;
+                stop = false;
+                while(!stop){
+                    y++;
+                    if(y < getGridWidth()){
+                        if(squaresArr.get(x).get(y) != aMine) {
+                            xyArr.add(convertStringToIntegerArray(String.format("%s,%s", x, y)));
+                            if(squaresArr.get(x).get(y) > 0) {
+                                stop = true;
+                            }
+                        } 
+                    } else {
+                        stop = true;
+                    }
+                }
+                currentHighestY = y - 1;
+
+                //move left
+                y = focalY;
+                stop = false;
+                while(!stop){
+                    y--;
+                    if (y >= 0) {
+                        if(squaresArr.get(x).get(y) != aMine) {
+                            xyArr.add(convertStringToIntegerArray(String.format("%s,%s", x, y)));
+                            if(squaresArr.get(x).get(y) > 0) {
+                                stop = true;
+                            }
+                        } 
+                    } else {
+                        stop = true;
+                    }
+                }
+                currentLowestY =  y + 1;
+
+                x--;
+            }else{
+                x = -1;
+            }
+        }
+    }
+
     public void playGame(){
         boolean quit = false;
         boolean exploded = false;
@@ -225,8 +385,8 @@ public class Tile {
         while (!quit && !exploded && !completed){
             revealTiles();
             displayTiles();
-            System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-9) and column number (0-9) separated by a comma.");
-            System.out.println("\nFor example, if you wish to open the tile in the first row and third column, you would enter 0,2 ");
+            System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-9) and column number (0-9) separated by a comma (eg. 0,2).");
+            System.out.println("\nPlease enter 'q' if you wish to quit the game.");
             String xy = sc.nextLine();
             if (xy.equals("q")) {
                 quit = true;
@@ -238,7 +398,7 @@ public class Tile {
                     } else {
                         xyArr.add(convertStringToIntegerArray(xy));
                         if(isSquareTileEmpty(coordinate[0], coordinate[1])){
-                            System.out.println("EMPTY!");
+                            addEmptySquarestoXYArray(coordinate[0], coordinate[1]);
                         }
                     }
                 }else{
