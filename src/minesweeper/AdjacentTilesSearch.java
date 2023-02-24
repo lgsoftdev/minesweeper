@@ -202,6 +202,4 @@ public class AdjacentTilesSearch {
             if(!isAMatch(x, y)) addCoordinates(x, y);
         }
     }
-
-
 }

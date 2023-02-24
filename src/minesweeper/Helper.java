@@ -9,4 +9,13 @@ public class Helper {
         }
         return true;
     }
+
+    public static boolean isAnInteger(String value){
+        try{
+            int anInt = Integer.parseInt(value);
+        }catch (NumberFormatException e){
+            return false;
+        }
+        return true;
+    }
 }

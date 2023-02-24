@@ -143,8 +143,8 @@ public class Tiles {
         }
     }
 
-    //A COPY. DO NOT DELETE.
-    public void revealSquareTiles(Integer[] explosionCoordinates){
+    //Look into refactoring revealSquareTiles and displayTiles
+    public void revealTiles(Integer[] explosionCoordinates){
         for(int i = 0; i < squaresArr.size(); i++)  {
             printRowTopBorder();
             System.out.println("");
@@ -207,8 +207,13 @@ public class Tiles {
     //IN PROGRESS
     private boolean validateXY(String xy) {
         //1. Size when string is split must be 2.
+        String[] strArr = xy.split(",");
+        if(strArr.length != 2) return false;
         //2. x and y must be numbers.
+        if(!Helper.isAnInteger(strArr[0])) return false;
+        if(!Helper.isAnInteger(strArr[1])) return false;
         //3. Check that coordinates are not out of bounds.
+        if(Helper.isOutOfBounds(Integer.parseInt(strArr[0]), Integer.parseInt(strArr[0]), getGridHeight(), getGridWidth())) return false;
         return true;
     }
 
@@ -229,20 +234,20 @@ public class Tiles {
         
         Scanner sc = new Scanner(System.in);
         while (!quit && !exploded && !isGameCompleted()){
-            revealSquareTiles(new Integer[0]);
+            revealTiles(new Integer[0]);
             displayTiles();
             if(!isGameCompleted()) {
                 System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-9) and column number (0-9) separated by a comma (eg. 0,2).");
                 System.out.println("\nPlease enter 'q' if you wish to quit the game.");
                 String xy = sc.nextLine();
-                if (xy.equals("q")) {
+                if (xy.equalsIgnoreCase("q")) {
                     quit = true;
                 }else{
                     if(validateXY(xy)) {
                         Integer[] coordinate = convertStringToIntegerArray(xy);
                         if(hasAMine(coordinate[0], coordinate[1])){
                             exploded = true;
-                            revealSquareTiles(coordinate);
+                            revealTiles(coordinate);
                             System.out.println("\n" + boom + "! You LOSE!");
                         } else {
                             if(isSquareTileEmpty(coordinate[0], coordinate[1])){
@@ -262,7 +267,7 @@ public class Tiles {
                     }
                 }
             } else{
-                revealSquareTiles(new Integer[0]);
+                revealTiles(new Integer[0]);
                 System.out.println("\nCongratulations! You WIN!");
             }
         }
