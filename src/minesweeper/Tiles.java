@@ -8,35 +8,44 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
-public class Tile {
+public class Tiles {
+    final int emptyTile = 0;
     final int aMine = -1;
-    final int beginnerGridHeight = 10;
-    final int beginnerGridWidth = 10;
-    final int beginnerTotalMines = 10;
+    final int beginnerGridHeight = 5;
+    final int beginnerGridWidth = 5;
+    final int beginnerTotalMines = 2;
+    final String boom = "BOOM";
     
     private int gridHeight;
     private int gridWidth;
     private int totalMines;
-    
-    private String gameTitle;
 
     private ArrayList<ArrayList<Integer>> squaresArr = new ArrayList<ArrayList<Integer>>();
     private ArrayList<Integer[]> xyArr = new ArrayList<Integer[]>();
 
-    public Tile(){
+    private boolean gameCompleted;
+
+    public Tiles(){
         //Default is 10x10 tile.
         setGridHeight(beginnerGridHeight);
         setGridWidth(beginnerGridWidth);
         setTotalMines(beginnerTotalMines);
+        setGameCompleted(false);
         
-        setGameTitle();
-
         // 1. Initialise squares.
         initialiseSquareTiles();
         // 2. Plant mines.
         plantMines();
         // 3. Assign mine count on squares adjacent to the mines.
         countAdjacentMines();
+    }
+
+    public boolean isGameCompleted() {
+        return gameCompleted;
+    }
+
+    public void setGameCompleted(boolean gameCompleted) {
+        this.gameCompleted = gameCompleted;
     }
 
     private int getGridHeight() {
@@ -63,24 +72,16 @@ public class Tile {
         this.totalMines = totalMines;
     }
 
-    private String getGameTitle() {
-        return gameTitle;
-    }
-
-    private void setGameTitle() {
-        this.gameTitle = String.format("\nMinesweeper %dx%d Square Tiles with %d Mines", getGridHeight(), getGridWidth(), getTotalMines());
-    }
-
     private void initialiseSquareTiles(){
         for(int i = 0; i < getGridHeight(); i++)  {
-            squaresArr.add(new ArrayList<Integer>(Collections.nCopies(getGridWidth(), 0)));
+            squaresArr.add(new ArrayList<Integer>(Collections.nCopies(getGridWidth(), emptyTile)));
         }
     }
 
     private void plantMines(){
         Random rand = new Random();
         for(int i = 0; i < getTotalMines(); i++){
-            Boolean placed = false;
+            boolean placed = false;
             while(!placed){
                 int heightIndex = rand.nextInt(getGridHeight());
                 int widthIndex = rand.nextInt(getGridWidth());
@@ -121,34 +122,38 @@ public class Tile {
     }
 
     private boolean hasAMine(int heightIndex, int widthIndex){
-        if(!isOutOfBounds(heightIndex, widthIndex)){
+        if(!Helper.isOutOfBounds(heightIndex, widthIndex, getGridHeight(), getGridWidth())){
             if(squaresArr.get(heightIndex).get(widthIndex) == -1) return true;
         }
         return false;
     }
 
     private boolean isSquareTileEmpty(int heightIndex, int widthIndex){
-        if(!isOutOfBounds(heightIndex, widthIndex)){
-            if(squaresArr.get(heightIndex).get(widthIndex) == 0) return true;
+        if(!Helper.isOutOfBounds(heightIndex, widthIndex, getGridHeight(), getGridWidth())){
+            if(squaresArr.get(heightIndex).get(widthIndex) == emptyTile) return true;
         }
         return false;
     }
 
     //Increment the mine count by one in the specified cell.
     private void incrementMineCountInSquare(int heightIndex, int widthIndex){
-        if(!isOutOfBounds(heightIndex, widthIndex)){
+        if(!Helper.isOutOfBounds(heightIndex, widthIndex, getGridHeight(), getGridWidth())){
             int currentMineCount = squaresArr.get(heightIndex).get(widthIndex);
             squaresArr.get(heightIndex).set(widthIndex, currentMineCount + 1);
         }
     }
 
-    //A COPY. DO NOT DELETE.
-    public void revealTiles(){
+    //Look into refactoring revealSquareTiles and displayTiles
+    public void revealTiles(Integer[] explosionCoordinates){
         for(int i = 0; i < squaresArr.size(); i++)  {
             printRowTopBorder();
             System.out.println("");
             for(int j = 0; j < squaresArr.get(i).size(); j++)  {
-                System.out.print(String.format("|%1$5s", squaresArr.get(i).get(j)));
+                String content = squaresArr.get(i).get(j) > 0 ? Integer.toString(squaresArr.get(i).get(j)) :  squaresArr.get(i).get(j) == -1 ? "[@]" : " ";
+                if(explosionCoordinates.length > 0){
+                    if(explosionCoordinates[0].equals(i) && explosionCoordinates[1].equals(j)) content = boom;
+                }
+                System.out.print(String.format("|%1$5s", content));
                 if(j == squaresArr.get(i).size() - 1){
                     System.out.print("|");
                 }
@@ -160,11 +165,14 @@ public class Tile {
 
     // IN PROGRESS
     private void displayTiles(){
+        boolean completed = true;
         for(int i = 0; i < squaresArr.size(); i++)  {
             printRowTopBorder();
             System.out.println("");
             for(int j = 0; j < squaresArr.get(i).size(); j++)  {
-                System.out.print(String.format("|%1$5s", revealTile(i, j) ? squaresArr.get(i).get(j) : "?"));
+                String content = getTileContent(i, j);
+                if (content.equals("*") && !hasAMine(i, j)) completed = false;
+                System.out.print(String.format("|%1$5s", content));
                 if(j == squaresArr.get(i).size() - 1){
                     System.out.print("|");
                 }
@@ -172,6 +180,13 @@ public class Tile {
             System.out.println("");
         }
         printRowTopBorder();
+
+        setGameCompleted(completed);
+    }
+
+    private String getTileContent(int x, int y){
+        String value = revealTile(x, y) ? (squaresArr.get(x).get(y) == 0) ? " " : Integer.toString(squaresArr.get(x).get(y)) : "*";
+        return value;
     }
 
     private boolean revealTile(int rowIndex, int columnIndex){
@@ -189,20 +204,16 @@ public class Tile {
         }
     }
 
-    private boolean isOutOfBounds(int heightIndex, int widthIndex){
-        if(heightIndex >= 0 && heightIndex < squaresArr.size()){
-            if(widthIndex >= 0 && widthIndex < squaresArr.get(heightIndex).size()){
-                return false;
-            }
-        }
-        return true;
-    }
-
     //IN PROGRESS
     private boolean validateXY(String xy) {
         //1. Size when string is split must be 2.
+        String[] strArr = xy.split(",");
+        if(strArr.length != 2) return false;
         //2. x and y must be numbers.
+        if(!Helper.isAnInteger(strArr[0])) return false;
+        if(!Helper.isAnInteger(strArr[1])) return false;
         //3. Check that coordinates are not out of bounds.
+        if(Helper.isOutOfBounds(Integer.parseInt(strArr[0]), Integer.parseInt(strArr[0]), getGridHeight(), getGridWidth())) return false;
         return true;
     }
 
@@ -213,41 +224,54 @@ public class Tile {
             intArr[i] = Integer.parseInt(strArr[i]);
         }
         return intArr;
-    }
+    }    
 
     public void playGame(){
         boolean quit = false;
         boolean exploded = false;
-        boolean completed = false;
-        System.out.println(getGameTitle());
+        String header = String.format("\nMinesweeper %dx%d Square Tiles with %d Mines", getGridHeight(), getGridWidth(), getTotalMines());
+        System.out.println(header);
         
         Scanner sc = new Scanner(System.in);
-        while (!quit && !exploded && !completed){
-            revealTiles();
+        while (!quit && !exploded && !isGameCompleted()){
+            revealTiles(new Integer[0]);
             displayTiles();
-            System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-9) and column number (0-9) separated by a comma.");
-            System.out.println("\nFor example, if you wish to open the tile in the first row and third column, you would enter 0,2 ");
-            String xy = sc.nextLine();
-            if (xy.equals("q")) {
-                quit = true;
-            }else{
-                if(validateXY(xy)) {
-                    Integer[] coordinate = convertStringToIntegerArray(xy);
-                    if(hasAMine(coordinate[0], coordinate[1])){
-                        exploded = true;
-                    } else {
-                        xyArr.add(convertStringToIntegerArray(xy));
-                        if(isSquareTileEmpty(coordinate[0], coordinate[1])){
-                            System.out.println("EMPTY!");
-                        }
-                    }
+            if(!isGameCompleted()) {
+                System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-9) and column number (0-9) separated by a comma (eg. 0,2).");
+                System.out.println("\nPlease enter 'q' if you wish to quit the game.");
+                String xy = sc.nextLine();
+                if (xy.equalsIgnoreCase("q")) {
+                    quit = true;
                 }else{
-                    System.out.println("The coordinates you entered were invalid.");
+                    if(validateXY(xy)) {
+                        Integer[] coordinate = convertStringToIntegerArray(xy);
+                        if(hasAMine(coordinate[0], coordinate[1])){
+                            exploded = true;
+                            revealTiles(coordinate);
+                            System.out.println("\n" + boom + "! You LOSE!");
+                        } else {
+                            if(isSquareTileEmpty(coordinate[0], coordinate[1])){
+                                AdjacentTilesSearch search = new AdjacentTilesSearch(squaresArr, coordinate[0], coordinate[1], 0, true);
+                                ArrayList<Integer[]> coordinatesArr =  search.getMatchedTilesCoordinates();
+                                if(coordinatesArr.size() > 0){
+                                    coordinatesArr.stream().forEach(element -> {
+                                        xyArr.add(convertStringToIntegerArray(String.format("%s,%s", element[0], element[1])));
+                                    });
+                                }
+                            } else{
+                                xyArr.add(coordinate);
+                            }
+                        }
+                    }else{
+                        System.out.println("The coordinates you entered were invalid.");
+                    }
                 }
+            } else{
+                revealTiles(new Integer[0]);
+                System.out.println("\nCongratulations! You WIN!");
             }
         }
         sc.close();
-        if(quit) System.out.println("See you next time!");
-        if(exploded) System.out.println("BOOM!");
+        if(quit) System.out.println("\nSee you next time!");
     }
 }
