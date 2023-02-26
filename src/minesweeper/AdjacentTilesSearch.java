@@ -63,7 +63,7 @@ public class AdjacentTilesSearch {
     }
 
     private void addCoordinates(int x, int y){
-        coordinatesArray.add(new Integer[]{x,y});
+        if(!areCoordinatesInArray(x, y)) coordinatesArray.add(new Integer[]{x,y});
     }
 
     public ArrayList<Integer[]> getMatchedTilesCoordinates(){
@@ -75,6 +75,7 @@ public class AdjacentTilesSearch {
         //4. Traverse down rows from initialX
         //5. Traverse up rows from lowest traversed row.
         traverseDownRowsFromCoordinateX(getInitialX(), true);
+
         if(isIncludeBorderTiles()) addBorderTilesCoordinates();
 
         return coordinatesArray;
@@ -116,8 +117,9 @@ public class AdjacentTilesSearch {
         while(x < tilesArray.size()){
             int previousX = x - 1;
             ArrayList<Integer[]> coordsArr = coordinatesArray.stream().filter(item -> item[0] == previousX).collect(Collectors.toCollection(ArrayList::new));   
-            ArrayList<Integer> yIndicesArr = new ArrayList<>();    
-            for(int i = 0; i < coordsArr.size(); i++){
+            ArrayList<Integer> yIndicesArr = new ArrayList<>();   
+            int coordsSize = coordsArr.size();
+            for(int i = 0; i < coordsSize; i++){
                 //store y coordinate of current matched cell which aligns with previous row's matched cells.
                 if(isAMatch(x, coordsArr.get(i)[1])) {
                     yIndicesArr.add(coordsArr.get(i)[1]);
@@ -127,9 +129,9 @@ public class AdjacentTilesSearch {
 
             //move right and left 
             //Duplicates may occur unless empty cells have non-empty cells in between. Duplicates won't cause any error.
-            int size = yIndicesArr.size(); 
-            if(size > 0) {
-                for(int i = 0; i < size; i++){
+            int yIndicesSize = yIndicesArr.size(); 
+            if(yIndicesSize > 0) {
+                for(int i = 0; i < yIndicesSize; i++){
                     findMatchedTilesOnRow(x, yIndicesArr.get(i));
                 }
                 x++;
@@ -149,7 +151,8 @@ public class AdjacentTilesSearch {
             int previousX = x + 1;
             ArrayList<Integer[]> coordsArr = coordinatesArray.stream().filter(item -> item[0] == previousX).collect(Collectors.toCollection(ArrayList::new));   
             ArrayList<Integer> yIndicesArr = new ArrayList<>();    
-            for(int i = 0; i < coordsArr.size(); i++){
+            int coordsSize = coordsArr.size();
+            for(int i = 0; i < coordsSize; i++){
                 //store y coordinate of current matched cell which aligns with previous row's matched cells.
                 if(isAMatch(x, coordsArr.get(i)[1])) {
                     yIndicesArr.add(coordsArr.get(i)[1]);
@@ -201,5 +204,13 @@ public class AdjacentTilesSearch {
         if(!Helper.isOutOfBounds(x, y, tilesArray.size(), tilesArray.get(0).size())){
             if(!isAMatch(x, y)) addCoordinates(x, y);
         }
+    }
+
+    private boolean areCoordinatesInArray(int x, int y){
+        if(coordinatesArray.size() > 0){
+            ArrayList<Integer[]> coords = coordinatesArray.stream().filter(item -> item[0] == x && item[1] == y).collect(Collectors.toCollection(ArrayList::new));
+            if (coords.size() > 0) return true;
+        }
+        return false;
     }
 }
