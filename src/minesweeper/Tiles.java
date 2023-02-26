@@ -106,22 +106,22 @@ public class Tiles {
             for(int j = 0; j < squaresArr.get(i).size(); j++){
                 //find the mines
                 if(hasAMine(i, j)){
-                    int rowAbove = i - 1;
-                    int rowBelow = i + 1;
-                    int columnLeft = j - 1;
-                    int columnRight = j + 1;
-
+                    ArrayList<Integer[]> coordsArr = new ArrayList<>();
                     //Check rows above the current square mine.
-                    if(!hasAMine(rowAbove, columnLeft)) incrementMineCountInSquare(rowAbove, columnLeft);
-                    if(!hasAMine(rowAbove, j)) incrementMineCountInSquare(rowAbove, j);
-                    if(!hasAMine(rowAbove, columnRight)) incrementMineCountInSquare(rowAbove, columnRight);
+                    coordsArr.add(new Integer[]{i - 1, j - 1});
+                    coordsArr.add(new Integer[]{i - 1, j});
+                    coordsArr.add(new Integer[]{i - 1, j + 1});
                     //Check rows adjacent to the current square mine.
-                    if(!hasAMine(i, columnLeft)) incrementMineCountInSquare(i, columnLeft);
-                    if(!hasAMine(i, columnRight)) incrementMineCountInSquare(i, columnRight);
+                    coordsArr.add(new Integer[]{i, j - 1});
+                    coordsArr.add(new Integer[]{i, j + 1});
                     //Check rows below the current square mine.
-                    if(!hasAMine(rowBelow, columnLeft)) incrementMineCountInSquare(rowBelow, columnLeft);
-                    if(!hasAMine(rowBelow, j)) incrementMineCountInSquare(rowBelow, j);
-                    if(!hasAMine(rowBelow, columnRight)) incrementMineCountInSquare(rowBelow, columnRight);
+                    coordsArr.add(new Integer[]{i + 1, j - 1});
+                    coordsArr.add(new Integer[]{i + 1, j});
+                    coordsArr.add(new Integer[]{i + 1, j + 1});
+
+                    coordsArr.stream().forEach(xy -> {
+                        if(!hasAMine(xy[0], xy[1])) incrementMineCountInSquare(xy[0], xy[1]);
+                    });
                 }
                 
             }
@@ -150,7 +150,6 @@ public class Tiles {
         }
     }
 
-    //Look into refactoring revealSquareTiles and displayTiles
     public void revealTiles(Integer[] explosionCoordinates){
         for(int i = 0; i < squaresArr.size(); i++)  {
             printRowTopBorder();
@@ -170,8 +169,7 @@ public class Tiles {
         printRowTopBorder();
     }
 
-    // IN PROGRESS
-    private void displayTiles(){
+    private void showTiles(){
         boolean completed = true;
         for(int i = 0; i < squaresArr.size(); i++)  {
             printRowTopBorder();
@@ -212,7 +210,6 @@ public class Tiles {
         System.out.println("");
     }
 
-    //IN PROGRESS
     private boolean validateXY(String xy) {
         //1. Size when string is split must be 2.
         String[] strArr = xy.split(",");
@@ -221,49 +218,38 @@ public class Tiles {
         if(!Helper.isAnInteger(strArr[0])) return false;
         if(!Helper.isAnInteger(strArr[1])) return false;
         //3. Check that coordinates are not out of bounds.
-        if(Helper.isOutOfBounds(Integer.parseInt(strArr[0]), Integer.parseInt(strArr[0]), getGridHeight(), getGridWidth())) return false;
+        if(Helper.isOutOfBounds(Integer.parseInt(strArr[0]), Integer.parseInt(strArr[1]), getGridHeight(), getGridWidth())) return false;
         return true;
     }
-
-    private Integer[] convertStringToIntegerArray(String xy) {
-        String[] strArr = xy.split(",");
-        Integer[] intArr = new Integer[strArr.length];
-        for(int i = 0; i < intArr.length; i++){
-            intArr[i] = Integer.parseInt(strArr[i]);
-        }
-        return intArr;
-    }    
-
-    public void playGame(){
+   
+    public void playGame(Scanner sc){
         boolean quit = false;
         boolean exploded = false;
         String header = String.format("\nMinesweeper %dx%d Square Tiles with %d Mines", getGridHeight(), getGridWidth(), getTotalMines());
         System.out.println(header);
         
-        Scanner sc = new Scanner(System.in);
         while (!quit && !exploded && !isGameCompleted()){
-            revealTiles(new Integer[0]);
-            displayTiles();
+            showTiles();
             if(!isGameCompleted()) {
-                System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-%d) and column number (0-%d) separated by a comma (eg. 0,2).", getGridWidth() - 1, getGridHeight() - 1);
+                System.out.printf("\nPlease enter the coordinates of the tile you wish to open by entering the row number (0-%d) and column number (0-%d) separated by a comma (eg. 0,2).", getGridHeight() - 1, getGridWidth() - 1);
                 System.out.println("\nPlease enter 'q' if you wish to quit the game.");
                 String xy = sc.nextLine();
                 if (xy.equalsIgnoreCase("q")) {
                     quit = true;
                 }else{
                     if(validateXY(xy)) {
-                        Integer[] coordinate = convertStringToIntegerArray(xy);
+                        Integer[] coordinate = Helper.convertStringToIntegerArray(xy);
                         if(hasAMine(coordinate[0], coordinate[1])){
                             exploded = true;
                             revealTiles(coordinate);
                             System.out.println(boom + "! You LOSE!");
                         } else {
                             if(isSquareTileEmpty(coordinate[0], coordinate[1])){
-                                AdjacentTilesSearch search = new AdjacentTilesSearch(squaresArr, coordinate[0], coordinate[1], 0, true);
+                                AdjacentTilesSearch search = new AdjacentTilesSearch(squaresArr, coordinate[0], coordinate[1], revealTiles0, true);
                                 ArrayList<Integer[]> coordinatesArr =  search.getMatchedTilesCoordinates();
                                 if(coordinatesArr.size() > 0){
                                     coordinatesArr.stream().forEach(element -> {
-                                        xyArr.add(convertStringToIntegerArray(String.format("%s,%s", element[0], element[1])));
+                                        xyArr.add(Helper.convertStringToIntegerArray(String.format("%s,%s", element[0], element[1])));
                                     });
                                 }
                             } else{
@@ -279,7 +265,7 @@ public class Tiles {
                 System.out.println("Congratulations! You WIN!");
             }
         }
-        sc.close();
+
         if(quit) System.out.println("See you next time!");
     }
 }
