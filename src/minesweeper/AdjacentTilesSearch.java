@@ -57,6 +57,7 @@ public class AdjacentTilesSearch {
         this.includeBorderTiles = includeBorderTiles;
     }
 
+    //Coordinates xy has content/value equal to the search value.
     private boolean isAMatch(int x, int y){
         if(tilesArray.get(x).get(y) == getToFind()) return true;
         return false;
@@ -71,10 +72,10 @@ public class AdjacentTilesSearch {
         findMatchedTilesOnRow(getInitialX(), getInitialY());
         //2. Traverse up rows from initialX
         //3. Traverse down rows from highest traversed row.
-        traverseUpRowsFromCoordinateX(getInitialX(), true);
+        traverseRows(true, getInitialX(), true);
         //4. Traverse down rows from initialX
         //5. Traverse up rows from lowest traversed row.
-        traverseDownRowsFromCoordinateX(getInitialX(), true);
+        traverseRows(false, getInitialX(), true);
 
         if(isIncludeBorderTiles()) addBorderTilesCoordinates();
 
@@ -85,95 +86,62 @@ public class AdjacentTilesSearch {
         //move right
         int x = currentX;
         int y = currentY;
-        boolean stop = false;
-        while(!stop){ 
-            if(y < tilesArray.get(x).size()){
-                if(isAMatch(x, y)) addCoordinates(x, y);
-                else stop = true;
-                y++;
-            } else {
-                stop = true;
-            }
-        }
+        findMatchOnRow(x, y, true);
 
         //move left
         y = currentY - 1;
-        stop = false;
-        while(!stop){               
-            if (y >= 0) {
+        findMatchOnRow(x, y, false);
+    }
+
+    //Helper method for findMatchedTilesOnRow.
+    private void findMatchOnRow(int x, int y, boolean increment){
+        boolean stop = false;
+        while(!stop){ 
+            if((increment && y < tilesArray.get(x).size()) || (!increment && y >= 0)){
                 if(isAMatch(x, y)) addCoordinates(x, y);
                 else stop = true;
-                y--;
+                
+                if(increment) y++;
+                else y--;
+            
             } else {
                 stop = true;
             }
         }
     }
 
-    private void traverseUpRowsFromCoordinateX(int fromCoordinateX, boolean traverseDown){
+    //If traverseUp == false, then traverse rows down.
+    private void traverseRows(boolean traverseUp, int fromCoordinateX, boolean traverseOppositeDirection){
         //Check from row after initialX until last row with matched cells.
-        int highestX = fromCoordinateX;
-        int x = fromCoordinateX + 1; 
-        while(x < tilesArray.size()){
-            int previousX = x - 1;
+        int focalX = fromCoordinateX;
+        int x = traverseUp ? fromCoordinateX + 1 : fromCoordinateX - 1; 
+        while((traverseUp && x < tilesArray.size()) || (!traverseUp && x >= 0)){
+            int previousX = traverseUp ? x - 1 : x + 1;
             ArrayList<Integer[]> coordsArr = coordinatesArray.stream().filter(item -> item[0] == previousX).collect(Collectors.toCollection(ArrayList::new));   
             ArrayList<Integer> yIndicesArr = new ArrayList<>();   
-            int coordsSize = coordsArr.size();
-            for(int i = 0; i < coordsSize; i++){
+            for(int i = 0; i < coordsArr.size(); i++){
                 //store y coordinate of current matched cell which aligns with previous row's matched cells.
                 if(isAMatch(x, coordsArr.get(i)[1])) {
                     yIndicesArr.add(coordsArr.get(i)[1]);
-                    highestX = x;
+                    focalX = x;
                 }
             }
 
             //move right and left 
-            //Duplicates may occur unless empty cells have non-empty cells in between. Duplicates won't cause any error.
-            int yIndicesSize = yIndicesArr.size(); 
-            if(yIndicesSize > 0) {
-                for(int i = 0; i < yIndicesSize; i++){
-                    findMatchedTilesOnRow(x, yIndicesArr.get(i));
-                }
-                x++;
-            } else{
-                x = tilesArray.size(); //so as to fail the while condition;
-            }
-        }
-
-        if (traverseDown) traverseDownRowsFromCoordinateX(highestX, false);
-    }
-
-    private void traverseDownRowsFromCoordinateX(int fromCoordinateX, boolean traverseUp){
-        //Check from row after initialX until last row with matched cells.
-        int lowestX = fromCoordinateX;
-        int x = fromCoordinateX - 1; 
-        while(x >= 0){
-            int previousX = x + 1;
-            ArrayList<Integer[]> coordsArr = coordinatesArray.stream().filter(item -> item[0] == previousX).collect(Collectors.toCollection(ArrayList::new));   
-            ArrayList<Integer> yIndicesArr = new ArrayList<>();    
-            int coordsSize = coordsArr.size();
-            for(int i = 0; i < coordsSize; i++){
-                //store y coordinate of current matched cell which aligns with previous row's matched cells.
-                if(isAMatch(x, coordsArr.get(i)[1])) {
-                    yIndicesArr.add(coordsArr.get(i)[1]);
-                    lowestX = x;
-                }
-            }
-
-            //move right and left 
-            //Duplicates may occur unless empty cells have non-empty cells in between. Duplicates won't cause any error.
             int size = yIndicesArr.size(); 
             if(size > 0) {
                 for(int i = 0; i < size; i++){
                     findMatchedTilesOnRow(x, yIndicesArr.get(i));
                 }
-                x--;
+                if(traverseUp) x++;
+                else x--;
             } else{
-                x = -1; //so as to fail the while condition;
+                if(traverseUp) x = tilesArray.size(); //so as to fail the while condition;
+                else x = -1;
             }
         }
 
-        if (traverseUp) traverseUpRowsFromCoordinateX(lowestX, false);
+        if(traverseOppositeDirection) traverseRows(!traverseUp, focalX, false);
     }
 
     private void addBorderTilesCoordinates(){
@@ -182,20 +150,16 @@ public class AdjacentTilesSearch {
             for(int i = 0; i < size; i++){
                 int x = coordinatesArray.get(i)[0];
                 int y = coordinatesArray.get(i)[1];
+                ArrayList<Integer[]> coordsArr = new ArrayList<>();
                 //check tile on top
-                int newX = x - 1;
-                int newY = y;
-                addCoordinatesIfNotMatched(newX, newY);
+                coordsArr.add(new Integer[]{ x - 1, y});
                 //check tile at bottom
-                newX = x + 1;
-                addCoordinatesIfNotMatched(newX, newY);
+                coordsArr.add(new Integer[]{ x + 1, y});
                 //check tile on right
-                newX = x;
-                newY = y + 1;
-                addCoordinatesIfNotMatched(newX, newY);
+                coordsArr.add(new Integer[]{ x, y + 1});
                 //check tile on left
-                newY = y - 1;
-                addCoordinatesIfNotMatched(newX, newY);
+                coordsArr.add(new Integer[]{ x, y - 1});
+                coordsArr.stream().forEach(xy -> addCoordinatesIfNotMatched(xy[0], xy[1]));
             }
         }
     }

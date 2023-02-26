@@ -9,7 +9,7 @@ public class Main {
         int userAction = 0;
         boolean inputComplete = false;
         while(!inputComplete) {
-            displayUserSelection();
+            showUserSelection();
             String strSelected = mainSC.nextLine();
             if(Helper.isAnInteger(strSelected) ){
                 Integer intSelected = Integer.parseInt(strSelected);
@@ -22,7 +22,7 @@ public class Main {
                         //Go to while
                         continue;
                     default:
-                        //Run rest of the code entered is invalid warning.
+                        //Run rest of the code to warn input is invalid.
                 }
             }         
             System.out.println("The selection you entered is invalid.");
@@ -30,11 +30,11 @@ public class Main {
 
         if(userAction == 1) {
             Tiles minesweeper = new Tiles();
-            minesweeper.playGame();
+            minesweeper.playGame(mainSC);
         } else if(userAction == 2){
             Integer[] dim = customiseTiles(mainSC);
             Tiles minesweeper = new Tiles(dim[0], dim[1], dim[2]);
-            minesweeper.playGame();
+            minesweeper.playGame(mainSC);
         } else {
             System.out.println("Goodbye!");
         }
@@ -42,7 +42,7 @@ public class Main {
         mainSC.close();
     }
 
-    private static void displayUserSelection(){ 
+    private static void showUserSelection(){ 
         System.out.println("Please select from the following:");
         System.out.println("1 -> Enter 1 to play 10x10 Tiles with 10 mines.");
         System.out.println("2 -> Enter 2 to customise Tile height, width and number of mines.");
@@ -50,37 +50,23 @@ public class Main {
     }
 
     private static Integer[] customiseTiles(Scanner sc){
+        final int maxDim = 30;
         boolean inputComplete = false;
-        int intWidth = 0;
-        int intHeight = 0;
-        int intMines = 0;
+        int intHeight = -1;
+        int intWidth = -1;
+        int intMines = -1;
         while(!inputComplete) {  
-            if(intHeight == 0){
-                System.out.println("Please enter the height (max 30).");
-                String height = sc.nextLine();
-                if(!Helper.isAnInteger(height) || Integer.parseInt(height) > 30){
-                    System.out.println("The height you entered is invalid.");
-                    continue;
-                }
-                intHeight = Integer.parseInt(height);
+            if(intHeight == -1){
+                intHeight = Helper.getIntegerInput(sc, "height", maxDim);
+                if(intHeight == -1) continue;
             }
-            if(intWidth == 0){
-                System.out.println("Please enter the width (max 30).");
-                String width = sc.nextLine();
-                if(!Helper.isAnInteger(width) || Integer.parseInt(width) > 30){
-                    System.out.println("The width you entered is invalid.");
-                    continue;
-                }
-                intWidth = Integer.parseInt(width);
+            if(intWidth == -1){
+                intWidth = Helper.getIntegerInput(sc, "width", maxDim);
+                if(intWidth == -1) continue;
             }
             int maxMines = (int) ((intWidth * intHeight) * .20);
-            System.out.printf("Please enter the number of mines (max %d).\n", maxMines);
-            String mines = sc.nextLine();
-            if(!Helper.isAnInteger(mines) || Integer.parseInt(mines) > maxMines){
-                System.out.println("The number of mines you entered is invalid.");
-                continue;
-            }
-            intMines = Integer.parseInt(mines);
+            intMines = Helper.getIntegerInput(sc, "number of mines", maxMines);
+            if(intMines == -1) continue;
             inputComplete = true;
         }
         return new Integer[]{intHeight, intWidth, intMines};
