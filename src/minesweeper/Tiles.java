@@ -245,7 +245,7 @@ public class Tiles {
                             System.out.println(boom + "! You LOSE!");
                         } else {
                             if(isSquareTileEmpty(coordinate[0], coordinate[1])){
-                                AdjacentTilesSearch search = new AdjacentTilesSearch(squaresArr, coordinate[0], coordinate[1], revealTiles0, true);
+                                AdjacentTilesSearch search = new AdjacentTilesSearch(squaresArr, coordinate[0], coordinate[1], emptyTile, true);
                                 ArrayList<Integer[]> coordinatesArr =  search.getMatchedTilesCoordinates();
                                 if(coordinatesArr.size() > 0){
                                     coordinatesArr.stream().forEach(element -> {
