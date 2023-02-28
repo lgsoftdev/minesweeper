@@ -1,12 +1,8 @@
 package minesweeper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class Tiles {
     final int emptyTile = 0;
@@ -23,6 +19,7 @@ public class Tiles {
 
     private ArrayList<ArrayList<Integer>> squaresArr = new ArrayList<ArrayList<Integer>>();
     private ArrayList<Integer[]> xyArr = new ArrayList<Integer[]>();
+    private ArrayList<Integer[]> minesArr;
 
     public Tiles(){
         //Default is 10x10 tile with 10 mines.
@@ -70,6 +67,10 @@ public class Tiles {
         this.totalMines = totalMines;
     }
 
+    public ArrayList<ArrayList<Integer>> getSquaresArr() {
+        return squaresArr;
+    }
+
     private void buildTiles(){
         // 1. Initialise squares.
         initialiseSquareTiles();
@@ -86,51 +87,38 @@ public class Tiles {
     }
 
     private void plantMines(){
-        Random rand = new Random();
-        for(int i = 0; i < getTotalMines(); i++){
-            boolean placed = false;
-            while(!placed){
-                int heightIndex = rand.nextInt(getGridHeight());
-                int widthIndex = rand.nextInt(getGridWidth());
-                if(squaresArr.get(heightIndex).get(widthIndex) == 0){
-                    squaresArr.get(heightIndex).set(widthIndex, aMine);
-                    placed = true;
-                }
-            }
-        }
+        RandomCoordinates mines = new RandomCoordinates(getGridHeight(), getGridWidth(), getTotalMines());
+        minesArr = mines.getCoordinatesArray();
+        minesArr.stream().forEach(mine -> squaresArr.get(mine[0]).set(mine[1], aMine));
     }
 
     //A square tile adjacent to a mine must have the count of the number of mines adjacent to it.
     private void countAdjacentMines() {
-        for(int i = 0; i < squaresArr.size(); i++){
-            for(int j = 0; j < squaresArr.get(i).size(); j++){
-                //find the mines
-                if(hasAMine(i, j)){
-                    ArrayList<Integer[]> coordsArr = new ArrayList<>();
-                    //Check rows above the current square mine.
-                    coordsArr.add(new Integer[]{i - 1, j - 1});
-                    coordsArr.add(new Integer[]{i - 1, j});
-                    coordsArr.add(new Integer[]{i - 1, j + 1});
-                    //Check rows adjacent to the current square mine.
-                    coordsArr.add(new Integer[]{i, j - 1});
-                    coordsArr.add(new Integer[]{i, j + 1});
-                    //Check rows below the current square mine.
-                    coordsArr.add(new Integer[]{i + 1, j - 1});
-                    coordsArr.add(new Integer[]{i + 1, j});
-                    coordsArr.add(new Integer[]{i + 1, j + 1});
+        minesArr.stream().forEach(mine -> {
+            ArrayList<Integer[]> coordsArr = new ArrayList<>();
+            int i = mine[0];
+            int j = mine[1];
+            //Check rows above the current square mine.
+            coordsArr.add(new Integer[]{i - 1, j - 1});
+            coordsArr.add(new Integer[]{i - 1, j});
+            coordsArr.add(new Integer[]{i - 1, j + 1});
+            //Check rows adjacent to the current square mine.
+            coordsArr.add(new Integer[]{i, j - 1});
+            coordsArr.add(new Integer[]{i, j + 1});
+            //Check rows below the current square mine.
+            coordsArr.add(new Integer[]{i + 1, j - 1});
+            coordsArr.add(new Integer[]{i + 1, j});
+            coordsArr.add(new Integer[]{i + 1, j + 1});
 
-                    coordsArr.stream().forEach(xy -> {
-                        if(!hasAMine(xy[0], xy[1])) incrementMineCountInSquare(xy[0], xy[1]);
-                    });
-                }
-                
-            }
-        }
+            coordsArr.stream().forEach(xy -> {
+                if(!hasAMine(xy[0], xy[1])) incrementMineCountInSquare(xy[0], xy[1]);
+            });
+        });
     }
 
     private boolean hasAMine(int heightIndex, int widthIndex){
         if(!Helper.isOutOfBounds(heightIndex, widthIndex, getGridHeight(), getGridWidth())){
-            if(squaresArr.get(heightIndex).get(widthIndex) == -1) return true;
+            if(squaresArr.get(heightIndex).get(widthIndex) == aMine) return true;
         }
         return false;
     }
@@ -190,16 +178,8 @@ public class Tiles {
     }
 
     private String getTileContent(int x, int y){
-        String value = revealTile(x, y) ? (squaresArr.get(x).get(y) == 0) ? " " : Integer.toString(squaresArr.get(x).get(y)) : "*";
+        String value = Helper.doCoordinatesExist(xyArr, x, y) ? (squaresArr.get(x).get(y) == 0) ? " " : Integer.toString(squaresArr.get(x).get(y)) : "*";
         return value;
-    }
-
-    private boolean revealTile(int rowIndex, int columnIndex){
-        Integer[] arrToCompare = { rowIndex, columnIndex };
-        List<Integer[]> filtered = new ArrayList<Integer[]>();
-        if(xyArr.size() > 0) filtered = xyArr.stream().filter(xy -> Arrays.equals(arrToCompare, xy)).collect(Collectors.toList());
-        if (filtered.size() > 0) return true;
-        return false;
     }
 
     private void printRowTopBorder(){

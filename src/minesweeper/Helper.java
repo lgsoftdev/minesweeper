@@ -1,6 +1,9 @@
 package minesweeper;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class Helper {
     public static boolean isOutOfBounds(int heightIndex, int widthIndex, int arrayHeight, int arrayWidth){
@@ -38,5 +41,13 @@ public class Helper {
             return -1;
         }
         return Integer.parseInt(input);
+    }
+
+    public static boolean doCoordinatesExist(ArrayList<Integer[]> coordinatesArray, int x, int y){
+        Integer[] arrToCompare = { x, y };
+        ArrayList<Integer[]> filtered = new ArrayList<Integer[]>();
+        if(coordinatesArray.size() > 0) filtered = coordinatesArray.stream().filter(xy -> Arrays.equals(arrToCompare, xy)).collect(Collectors.toCollection(ArrayList::new));
+        if (filtered.size() > 0) return true;
+        return false;
     }
 }
